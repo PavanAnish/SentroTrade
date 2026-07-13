@@ -4,11 +4,13 @@ import React, { useEffect, useState, useCallback } from 'react';
 import PortfolioChart from '@/components/PortfolioChart';
 import AIJustificationLog from '@/components/AIJustificationLog';
 import ManualTradeOverride from '@/components/ManualTradeOverride';
+import BacktestEngine from '@/components/BacktestEngine';
 
 export default function Dashboard() {
   const [portfolio, setPortfolio] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [triggeringAi, setTriggeringAi] = useState(false);
+  const [activeTab, setActiveTab] = useState<'live' | 'backtest'>('live');
 
   const fetchPortfolio = useCallback(async () => {
     try {
@@ -26,8 +28,6 @@ export default function Dashboard() {
 
   useEffect(() => {
     fetchPortfolio();
-    
-    // Poll every 5 seconds for live updates
     const interval = setInterval(fetchPortfolio, 5000);
     return () => clearInterval(interval);
   }, [fetchPortfolio]);
@@ -36,7 +36,6 @@ export default function Dashboard() {
     setTriggeringAi(true);
     try {
       await fetch('http://localhost:8000/api/trigger_ai_bot', { method: 'POST' });
-      // Fetch immediately to show changes if any
       setTimeout(fetchPortfolio, 1000); 
     } catch (err) {
       console.error('Failed to trigger AI', err);
@@ -59,7 +58,7 @@ export default function Dashboard() {
       <div className="absolute top-[-10%] left-[-10%] w-[40%] h-[40%] rounded-full bg-blue-600/10 blur-[120px] pointer-events-none" />
       <div className="absolute bottom-[-10%] right-[-10%] w-[40%] h-[40%] rounded-full bg-cyan-600/10 blur-[120px] pointer-events-none" />
 
-      <header className="mb-10 flex flex-col md:flex-row justify-between items-start md:items-center relative z-10">
+      <header className="mb-8 flex flex-col md:flex-row justify-between items-start md:items-center relative z-10">
         <div>
           <h1 className="text-4xl font-extrabold bg-clip-text text-transparent bg-gradient-to-r from-blue-400 to-cyan-300">
             Nexus AI Trader
@@ -85,43 +84,55 @@ export default function Dashboard() {
         </div>
       </header>
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 relative z-10">
-        
-        {/* Left Column */}
-        <div className="lg:col-span-2 space-y-6">
-          <div className="glass-panel p-6">
-            <div className="flex justify-between items-center mb-6">
-              <h2 className="text-xl font-bold text-slate-100">Live Dashboard</h2>
-              <div className="flex items-center gap-2">
-                <span className="text-sm text-slate-400">Cash Balance:</span>
-                <span className="font-mono font-bold text-slate-200">
-                  ${portfolio?.balance?.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-                </span>
-              </div>
-            </div>
-            <PortfolioChart positions={portfolio?.positions || []} />
-          </div>
-          
-          <div className="glass-panel p-6 hidden lg:block">
-            {/* Decorative bottom panel or extra chart space */}
-            <div className="h-24 flex items-center justify-center text-slate-600 border border-dashed border-slate-700/50 rounded-lg">
-              Market Sentiment Heatmap (Coming Soon)
-            </div>
-          </div>
-        </div>
-
-        {/* Right Column */}
-        <div className="space-y-6 lg:col-span-1">
-          <div className="glass-panel p-6">
-            <ManualTradeOverride onTradeComplete={fetchPortfolio} />
-          </div>
-
-          <div className="glass-panel p-6">
-            <AIJustificationLog trades={portfolio?.recent_trades || []} />
-          </div>
-        </div>
-
+      {/* Tabs */}
+      <div className="flex gap-4 border-b border-slate-800 mb-8 relative z-10">
+        <button 
+          onClick={() => setActiveTab('live')}
+          className={`pb-3 px-2 font-medium text-lg transition-colors border-b-2 ${activeTab === 'live' ? 'border-cyan-400 text-cyan-400' : 'border-transparent text-slate-500 hover:text-slate-300'}`}
+        >
+          Live Trading
+        </button>
+        <button 
+          onClick={() => setActiveTab('backtest')}
+          className={`pb-3 px-2 font-medium text-lg transition-colors border-b-2 ${activeTab === 'backtest' ? 'border-cyan-400 text-cyan-400' : 'border-transparent text-slate-500 hover:text-slate-300'}`}
+        >
+          Backtesting Engine
+        </button>
       </div>
+
+      {activeTab === 'live' ? (
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 relative z-10">
+          {/* Left Column */}
+          <div className="lg:col-span-2 space-y-6">
+            <div className="glass-panel p-6">
+              <div className="flex justify-between items-center mb-6">
+                <h2 className="text-xl font-bold text-slate-100">Live Dashboard</h2>
+                <div className="flex items-center gap-2">
+                  <span className="text-sm text-slate-400">Cash Balance:</span>
+                  <span className="font-mono font-bold text-slate-200">
+                    ${portfolio?.balance?.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                  </span>
+                </div>
+              </div>
+              <PortfolioChart positions={portfolio?.positions || []} />
+            </div>
+          </div>
+
+          {/* Right Column */}
+          <div className="space-y-6 lg:col-span-1">
+            <div className="glass-panel p-6">
+              <ManualTradeOverride onTradeComplete={fetchPortfolio} />
+            </div>
+            <div className="glass-panel p-6">
+              <AIJustificationLog trades={portfolio?.recent_trades || []} />
+            </div>
+          </div>
+        </div>
+      ) : (
+        <div className="glass-panel p-6 relative z-10">
+          <BacktestEngine />
+        </div>
+      )}
     </div>
   );
 }
