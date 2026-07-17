@@ -5,6 +5,8 @@ import PortfolioChart from '@/components/PortfolioChart';
 import AIJustificationLog from '@/components/AIJustificationLog';
 import ManualTradeOverride from '@/components/ManualTradeOverride';
 import BacktestEngine from '@/components/BacktestEngine';
+import LiveTicker from '@/components/LiveTicker';
+import WatchlistManager from '@/components/WatchlistManager';
 
 interface Portfolio {
   balance: number;
@@ -157,12 +159,14 @@ export default function Dashboard() {
                   </span>
                 </div>
               </div>
+              <LiveTicker />
               <PortfolioChart positions={portfolio?.positions || []} />
             </div>
           </div>
 
           {/* Right Column */}
           <div className="space-y-6 lg:col-span-1">
+            <WatchlistManager />
             <div className="glass-panel p-6">
               <ManualTradeOverride onTradeComplete={fetchPortfolio} />
             </div>

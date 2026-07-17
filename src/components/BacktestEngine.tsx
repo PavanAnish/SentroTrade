@@ -16,6 +16,9 @@ interface BacktestResponse {
   dates: string[];
   ai_portfolio_value: number[];
   buy_hold_value: number[];
+  sharpe_ratio: number;
+  accuracy: number;
+  trades: Array<{ date: string; type: string; price: number }>;
 }
 
 interface BacktestResult {
@@ -28,8 +31,10 @@ export default function BacktestEngine() {
   const [ticker, setTicker] = useState('AAPL');
   const [startDate, setStartDate] = useState('2023-01-01');
   const [endDate, setEndDate] = useState('2023-12-31');
+  const [threshold, setThreshold] = useState('0.3');
   const [loading, setLoading] = useState(false);
   const [results, setResults] = useState<BacktestResult[] | null>(null);
+  const [metrics, setMetrics] = useState<{ sharpe: number; accuracy: number; tradesCount: number } | null>(null);
   const [error, setError] = useState<string | null>(null);
 
   const runBacktest = async (e: React.FormEvent) => {
@@ -42,7 +47,12 @@ export default function BacktestEngine() {
       const res = await fetch('/api/backtest', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ ticker, start_date: startDate, end_date: endDate }),
+        body: JSON.stringify({ 
+          ticker, 
+          start_date: startDate, 
+          end_date: endDate,
+          sentiment_threshold: parseFloat(threshold) 
+        }),
       });
       
       const data: BacktestResponse | { detail?: string } = await res.json();
@@ -62,6 +72,11 @@ export default function BacktestEngine() {
       }));
       
       setResults(formattedData);
+      setMetrics({
+        sharpe: data.sharpe_ratio,
+        accuracy: data.accuracy,
+        tradesCount: data.trades.length
+      });
     } catch (err: unknown) {
       setError(err instanceof Error ? err.message : 'Backtest failed');
     } finally {
@@ -112,6 +127,19 @@ export default function BacktestEngine() {
             required
           />
         </div>
+        <div>
+          <label className="block text-xs text-slate-400 mb-1">AI Sentiment Threshold</label>
+          <input 
+            type="number" 
+            step="0.1"
+            min="0"
+            max="1"
+            value={threshold} 
+            onChange={(e) => setThreshold(e.target.value)}
+            className="w-full bg-slate-800 border border-slate-700 rounded-lg px-3 py-2 text-slate-200 focus:outline-none focus:border-cyan-500"
+            required
+          />
+        </div>
         <div className="flex items-end">
           <button 
             type="submit" 
@@ -129,52 +157,69 @@ export default function BacktestEngine() {
         </div>
       )}
 
-      {results && (
-        <div className="bg-slate-900/30 p-4 rounded-xl border border-slate-700/50 h-[400px]">
-          <ResponsiveContainer width="100%" height="100%">
-            <LineChart
-              data={results}
-              margin={{ top: 10, right: 30, left: 20, bottom: 5 }}
-            >
-              <CartesianGrid strokeDasharray="3 3" stroke="#334155" vertical={false} />
-              <XAxis 
-                dataKey="date" 
-                stroke="#64748b" 
-                tick={{fill: '#64748b', fontSize: 12}} 
-                minTickGap={30}
-              />
-              <YAxis 
-                stroke="#64748b" 
-                tick={{fill: '#64748b', fontSize: 12}}
-                domain={['auto', 'auto']}
-                tickFormatter={(val) => `$${(val / 1000)}k`}
-              />
-              <Tooltip 
-                contentStyle={{ backgroundColor: '#1e293b', borderColor: '#334155', color: '#f8fafc' }}
-                itemStyle={{ fontWeight: 'bold' }}
-                formatter={(value) => [
-                  `$${Number(value ?? 0).toLocaleString()}`,
-                ]}
-              />
-              <Legend wrapperStyle={{ paddingTop: '20px' }}/>
-              <Line 
-                type="monotone" 
-                dataKey="AI Sentiment Bot" 
-                stroke="#22d3ee" 
-                strokeWidth={3}
-                dot={false}
-                activeDot={{ r: 6 }} 
-              />
-              <Line 
-                type="monotone" 
-                dataKey="Buy & Hold" 
-                stroke="#64748b" 
-                strokeWidth={2}
-                strokeDasharray="5 5"
-                dot={false} 
-              />
-            </LineChart>
-          </ResponsiveContainer>
+      {results && metrics && (
+        <div className="space-y-4">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div className="bg-slate-800/50 p-4 rounded-xl border border-slate-700 flex flex-col items-center">
+              <span className="text-sm text-slate-400">AI Model Accuracy</span>
+              <span className="text-2xl font-bold text-emerald-400">{(metrics.accuracy * 100).toFixed(1)}%</span>
+            </div>
+            <div className="bg-slate-800/50 p-4 rounded-xl border border-slate-700 flex flex-col items-center">
+              <span className="text-sm text-slate-400">Sharpe Ratio</span>
+              <span className="text-2xl font-bold text-cyan-400">{metrics.sharpe.toFixed(2)}</span>
+            </div>
+            <div className="bg-slate-800/50 p-4 rounded-xl border border-slate-700 flex flex-col items-center">
+              <span className="text-sm text-slate-400">Total Trades Executed</span>
+              <span className="text-2xl font-bold text-slate-200">{metrics.tradesCount}</span>
+            </div>
+          </div>
+
+          <div className="bg-slate-900/30 p-4 rounded-xl border border-slate-700/50 h-[400px]">
+            <ResponsiveContainer width="100%" height="100%">
+              <LineChart
+                data={results}
+                margin={{ top: 10, right: 30, left: 20, bottom: 5 }}
+              >
+                <CartesianGrid strokeDasharray="3 3" stroke="#334155" vertical={false} />
+                <XAxis 
+                  dataKey="date" 
+                  stroke="#64748b" 
+                  tick={{fill: '#64748b', fontSize: 12}} 
+                  minTickGap={30}
+                />
+                <YAxis 
+                  stroke="#64748b" 
+                  tick={{fill: '#64748b', fontSize: 12}}
+                  domain={['auto', 'auto']}
+                  tickFormatter={(val) => `$${(val / 1000)}k`}
+                />
+                <Tooltip 
+                  contentStyle={{ backgroundColor: '#1e293b', borderColor: '#334155', color: '#f8fafc' }}
+                  itemStyle={{ fontWeight: 'bold' }}
+                  formatter={(value) => [
+                    `$${Number(value ?? 0).toLocaleString()}`,
+                  ]}
+                />
+                <Legend wrapperStyle={{ paddingTop: '20px' }}/>
+                <Line 
+                  type="monotone" 
+                  dataKey="AI Sentiment Bot" 
+                  stroke="#22d3ee" 
+                  strokeWidth={3}
+                  dot={false}
+                  activeDot={{ r: 6 }} 
+                />
+                <Line 
+                  type="monotone" 
+                  dataKey="Buy & Hold" 
+                  stroke="#64748b" 
+                  strokeWidth={2}
+                  strokeDasharray="5 5"
+                  dot={false} 
+                />
+              </LineChart>
+            </ResponsiveContainer>
+          </div>
         </div>
       )}
     </div>
