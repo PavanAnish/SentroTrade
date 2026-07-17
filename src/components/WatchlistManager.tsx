@@ -6,6 +6,7 @@ export default function WatchlistManager() {
   const [ticker, setTicker] = useState('');
   const [watchlist, setWatchlist] = useState<string[]>([]);
   const [loading, setLoading] = useState(false);
+  const popularStocks = ['AAPL', 'MSFT', 'GOOG', 'AMZN', 'TSLA', 'META', 'NVDA'];
 
   const fetchWatchlist = async () => {
     try {
@@ -49,6 +50,39 @@ export default function WatchlistManager() {
     }
   };
 
+  const handleQuickAdd = (t: string) => {
+    if (!watchlist.includes(t)) {
+      setTicker(t);
+      // We can't immediately call handleAdd because state update is async, 
+      // but we can execute the API call directly.
+      handleAddDirect(t);
+    }
+  };
+
+  const handleAddDirect = async (t: string) => {
+    setLoading(true);
+    try {
+      const res = await fetch('/api/watchlist', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ ticker: t })
+      });
+      
+      if (!res.ok) {
+        const errorData = await res.json();
+        alert(errorData.detail || "Failed to add ticker. It might be invalid.");
+        return;
+      }
+      
+      setTicker('');
+      fetchWatchlist();
+    } catch (e) {
+      console.error('Failed to add to watchlist', e);
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const handleRemove = async (t: string) => {
     try {
       await fetch(`/api/watchlist/${t}`, { method: 'DELETE' });
@@ -68,7 +102,7 @@ export default function WatchlistManager() {
         Watchlist
       </h3>
       
-      <form onSubmit={handleAdd} className="flex gap-2 mb-4">
+      <form onSubmit={handleAdd} className="flex gap-2 mb-2">
         <input 
           type="text" 
           value={ticker} 
@@ -80,6 +114,21 @@ export default function WatchlistManager() {
           Add
         </button>
       </form>
+
+      <div className="flex flex-wrap items-center gap-2 mb-4">
+        <span className="text-xs text-slate-400">Popular:</span>
+        {popularStocks.map(stock => (
+          <button
+            key={stock}
+            type="button"
+            onClick={() => handleQuickAdd(stock)}
+            disabled={loading || watchlist.includes(stock)}
+            className="text-xs bg-slate-800 hover:bg-slate-700 text-slate-300 px-2 py-1 rounded transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
+          >
+            {stock}
+          </button>
+        ))}
+      </div>
 
       <div className="flex flex-wrap gap-2">
         {watchlist.length === 0 ? (
