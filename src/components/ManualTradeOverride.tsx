@@ -3,7 +3,7 @@
 import React, { useState } from 'react';
 
 export default function ManualTradeOverride({ onTradeComplete }: { onTradeComplete: () => void }) {
-  const [ticker, setTicker] = useState('AAPL');
+  const [ticker, setTicker] = useState('');
   const [quantity, setQuantity] = useState(10);
   const [orderType, setOrderType] = useState('BUY');
   const [isLoading, setIsLoading] = useState(false);
@@ -42,15 +42,14 @@ export default function ManualTradeOverride({ onTradeComplete }: { onTradeComple
         <div className="grid grid-cols-2 gap-4">
           <div>
             <label className="block text-xs text-slate-400 mb-1">Ticker</label>
-            <select 
+            <input 
+              type="text"
               value={ticker} 
-              onChange={(e) => setTicker(e.target.value)}
-              className="w-full bg-slate-800 border border-slate-700 rounded-lg px-3 py-2 text-slate-200 focus:outline-none focus:border-cyan-500"
-            >
-              <option value="AAPL">AAPL</option>
-              <option value="TSLA">TSLA</option>
-              <option value="NVDA">NVDA</option>
-            </select>
+              onChange={(e) => setTicker(e.target.value.toUpperCase())}
+              placeholder="e.g. MSFT"
+              className="w-full bg-slate-800 border border-slate-700 rounded-lg px-3 py-2 text-slate-200 focus:outline-none focus:border-cyan-500 uppercase"
+              required
+            />
           </div>
           <div>
             <label className="block text-xs text-slate-400 mb-1">Quantity</label>
@@ -91,7 +90,7 @@ export default function ManualTradeOverride({ onTradeComplete }: { onTradeComple
 
         <button 
           type="submit" 
-          disabled={isLoading}
+          disabled={isLoading || !ticker}
           className="w-full btn-primary disabled:opacity-50"
         >
           {isLoading ? 'Executing...' : 'Execute Manual Trade'}
