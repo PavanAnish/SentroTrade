@@ -19,7 +19,7 @@ An intelligent, full-stack paper trading platform that executes trades based on 
 
 ---
 
-## 🛠 Tech Stack
+## 🛠 Tech Stack  
 
 * **Frontend:** Next.js (React), Tailwind CSS, TypeScript
 * **Backend:** Python, FastAPI, SQLite (Trading Database)
