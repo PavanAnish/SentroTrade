@@ -4,7 +4,7 @@ An intelligent, full-stack paper trading platform that executes trades based on 
 
 ---
 
-## 🌟 Key Features
+##  Key Features
 
 ### Trading & Sentiment Analysis
 * **Sentiment Engine:** Analyzes real-time news and market sentiment to generate actionable trading signals.
@@ -27,7 +27,7 @@ An intelligent, full-stack paper trading platform that executes trades based on 
 
 ---
 
-## 📂 Project Structure
+##  Project Structure
 
 ```text
 sentiment-paper-trader/
@@ -45,7 +45,7 @@ sentiment-paper-trader/
 
 ---
 
-## 🚀 Getting Started (Local Development)
+##  Getting Started (Local Development)
 
 ### Prerequisites
 * [Docker](https://docs.docker.com/get-docker/) and Docker Compose installed.
@@ -91,7 +91,7 @@ npm run dev
 
 ---
 
-## ☁️ Deployment
+##  Deployment
 
 The project is designed to be highly scalable and can be deployed to various cloud providers. 
 
